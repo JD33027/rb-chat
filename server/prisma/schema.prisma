@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  countryCode String   // e.g., "+1", "+44"
+  phoneNumber String   // e.g., "5551234567" (national number)
+  password  String
+  username  String?  @unique // Optional and unique username
+  profilePictureUrl String?  // Optional profile picture URL
+  lastSeen          DateTime? // The last time the user was seen online
+  createdAt DateTime @default(now())
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  @@unique([countryCode, phoneNumber]) // Combined unique constraint
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], name: "SentMessages")
+  recipientId String
+  recipient User     @relation(fields: [recipientId], references: [id], name: "ReceivedMessages")
+  status    MessageStatus @default(SENT)
+  createdAt DateTime @default(now())
+  type      MessageType @default(TEXT)
+  caption   String?
+  isDeleted Boolean  @default(false)
+  isForwarded Boolean @default(false)
+
+  // Fields for the reply feature
+  repliedToId String?
+  repliedTo   Message?  @relation("MessageReplies", fields: [repliedToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies     Message[] @relation("MessageReplies")
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  SEEN
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+}
