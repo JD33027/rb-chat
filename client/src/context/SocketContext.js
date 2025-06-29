@@ -14,27 +14,24 @@ export const SocketProvider = ({ children }) => {
   const { token } = useAuth();
 
   useEffect(() => {
-    if (token) {
-      // Establish connection when user is authenticated
-      const newSocket = io(API_BASE_URL);
-
-      newSocket.on('connect', () => {
-        // Authenticate the socket connection
-        newSocket.emit('authenticate', token);
-      });
-
-      setSocket(newSocket);
-
-      // Cleanup on component unmount or token change
-      return () => {
-        newSocket.disconnect();
-      };
-    } else {
-      // If there's no token, disconnect any existing socket
-      if (socket) {
-        socket.disconnect();
-      }
+    if (!token) {
+      return;
     }
+    // Establish connection when user is authenticated
+    const newSocket = io(API_BASE_URL);
+
+    newSocket.on('connect', () => {
+      // Authenticate the socket connection
+      newSocket.emit('authenticate', token);
+    });
+
+    setSocket(newSocket);
+
+    // Cleanup on component unmount or token change
+    return () => {
+      newSocket.disconnect();
+      setSocket(null);
+    };
   }, [token]);
 
   return <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>;
